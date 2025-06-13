@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hut18.dev.app
+    working_dir: /var/www/app
+    volumes:
+      - ./app:/var/www/app
+    ports:
+      - "8888:8000"
+    networks:
+      - hut18.network
+    depends_on:
+      - mysql
+      - redis
+    command: >
+      bash -c "
+        composer install &&
+        php artisan key:generate &&
+        php artisan migrate &&
+        php artisan serve --host=0.0.0.0 --port=8000
+      "
+
+  mysql:
+    image: mysql:8
+    container_name: hut18.dev.mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: hut18
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3308:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - hut18.network
+
+  redis:
+    image: redis:alpine
+    container_name: hut18.dev.redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hut18.network
+
+networks:
+  hut18.network:
+
+volumes:
+  dbdata:
