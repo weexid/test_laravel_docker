@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hut18.regist.app
+    working_dir: /var/www/app
+    volumes:
+      - ./app:/var/www/app
+    networks:
+      - hut18.regist.network
+    depends_on:
+      - redis
+      - mysql
+    command: >
+      bash -c "
+        chown -R www-data:www-data /var/www/app/storage /var/www/app/bootstrap/cache &&
+        chmod -R 775 /var/www/app/storage /var/www/app/bootstrap/cache &&
+        php-fpm
+      "
+  webserver:
+    image: nginx:alpine
+    container_name: hut18.regist.nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/var/www/app
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - app
+    networks:
+      - hut18.regist.network
+
+  mysql:
+    image: mysql:8
+    container_name: hut18.regist.mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: hut18.regist.db
+      MYSQL_USER: hut18.regist.DBuser
+      MYSQL_PASSWORD: hut18.regist.DBpassword
+    ports:
+      - "3308:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - hut18.regist.network
+
+  redis:
+    image: redis:alpine
+    container_name: hut18.regist.redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hut18.regist.network
+
+networks:
+  hut18.regist.network:
+
+volumes:
+  dbdata:
